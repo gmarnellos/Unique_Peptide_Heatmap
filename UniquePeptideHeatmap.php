@@ -58,7 +58,7 @@
               
               $this->current_file = $file;
               
-              // data to be read in
+              // data to be read in from each file
               $data = array();
               $sequence = "";
 	          $desc = "";
@@ -76,9 +76,9 @@
                       
                       if (preg_match("/\t/",$tmpline)) {
                           $linearr = preg_split("/\t/",$tmpline);
-                          foreach ($linearr as $ii => $line) {
-                              $linearr[$ii] = preg_replace("/^\"(.*)\"$/",'$1',$line);
-                          }
+                          //foreach ($linearr as $ii => $line) {
+                              //$linearr[$ii] = preg_replace("/^\"(.*)\"$/",'$1',$line);
+                          //}
                       } else {
                           $linearr = csv_string_to_array($tmpline);
                       }
@@ -87,15 +87,19 @@
                       
                       if ($i > 0) {
                           
-                          $unique_peptides = $linearr[8];
+                          //$unique_peptides = $linearr[8];
+                          $unique_peptides = $linearr[4];
                           //print $unique_peptides;
                           
                           // read appropriate columns from input file(s) into data array
                           if ($unique_peptides == 1) {
-                              $sequence = $linearr[3];
-                              $accession = $linearr[9];
-                              $desc      = $linearr[6];
-                              $area = $linearr[16];
+                              //$sequence = $linearr[3];
+                              $sequence = $linearr[1];
+                              //$accession = $linearr[9];
+                              $accession = $linearr[5];
+                              //$desc      = $linearr[6];
+                              //$area = $linearr[16];
+                              $area = $linearr[8];
 			      
                               
                               if ($data[$accession]) {
@@ -108,7 +112,8 @@
                               }
                               else {
                                   $data[$accession]['seqs'][$sequence]['area'] = array($area);
-                                  $data[$accession]['description'] = $desc;
+                                  //$data[$accession]['description'] = $desc;
+                                  $data[$accession]['description'] = '  ';
                               }
 
                           }
@@ -133,18 +138,20 @@
 
                       // go through unique, non-redundant peptides
                       foreach ($acc_contents['seqs'] as $pep => $pep_contents) {
-                          $new_description = "$acc : $description";
-                          $peptide_string = $pep;
+                          //$new_description = "$acc : $description";
+                          $new_description = $acc;
+                          //$peptide_string = $pep;
                           $comp_area = array_sum($pep_contents['area'])/count($pep_contents['area']);
                           // process information of each peptide
-                          $this->process_accession($pep,$new_description,$comp_area);
+			              $this->process_peptide($pep,$acc,$description,$comp_area);
+//                          $this->process_accession($pep,$new_description,$comp_area);
                       }
 
                       //echo "Acc: $acc  Desc: $description  Num: $num_unique_peptides Area: $comp_area \n";
                     
                   }
                   
-                  unset($data);    // This deletes the whole $data array
+                  unset($data);    // Deletes the whole $data array for parsed input file
          
               } // end if
 
@@ -166,57 +173,105 @@
             $outobj->setActiveSheetIndex(0);
             
             $outobj->getActiveSheet()->setCellValue('A1','Peptide sequence');
-            $outobj->getActiveSheet()->setCellValue('B1','Accession : Description');
+            $outobj->getActiveSheet()->setCellValue('B1','Protein Accession');
+            $outobj->getActiveSheet()->setCellValue('C1','Protein Description');
+            $outobj->getActiveSheet()->setCellValue('D1','');
             
-            $cols = array('C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT','AU','AV','AW','AX','AY','AZ');
+            //$cols = array('C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT','AU','AV','AW','AX','AY','AZ');
+            
+            $cols = array('E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT','AU','AV','AW','AX','AY','AZ');
             
             foreach ($this->files as $i => $f) {
                 // Set column headings and widths
                 $outobj->getActiveSheet()->setCellValue($cols[$i]."1",$this->filenames[$i] . " Area");
-                $outobj->getActiveSheet()->getColumnDimension($cols[$i])->setWidth(15);
+                $outobj->getActiveSheet()->getColumnDimension($cols[$i])->setWidth(12);
                 
             }
             
             //$outobj->getActiveSheet()->getColumnDimension('A')->setAutoSize(true);
             $outobj->getActiveSheet()->getColumnDimension('A')->setWidth(45);
-            $outobj->getActiveSheet()->getColumnDimension('B')->setWidth(70);;
+            $outobj->getActiveSheet()->getColumnDimension('B')->setWidth(15);
+            $outobj->getActiveSheet()->getColumnDimension('C')->setWidth(20);
+            $outobj->getActiveSheet()->getColumnDimension('D')->setWidth(8);
             
             $row = 2;
             
             $accnum = 0;
             
             foreach ($this->accessions as $acc => $vals) {
-                $desc = $vals['Description'];
+                
+                    //echo $acc . "   " . $vals . "\n";
+                
+                $common_prot_acc = "";
+                $common_desc = "";
+                
+                $ignore_peptide = "no";
+                
+                //$desc = $vals['Description'];
                 
                 //$unique_peptides = "-";
                 
-                $outobj->getActiveSheet()->setCellValue('A'.$row,$acc);
-                $outobj->getActiveSheet()->setCellValue('B'.$row,$desc);
+                //$outobj->getActiveSheet()->setCellValue('A'.$row,$acc);
+                //$outobj->getActiveSheet()->setCellValue('B'.$row,$desc);
                 
                 //$url = preg_replace("/{{acc}}/",$acc,$this->protein_url);
                 //$outobj->getActiveSheet()->getCell('A'.$row)->getHyperlink()->setUrl("http://www.uniprot.org/uniprot/$acc");
                 
-                foreach ($this->files as $i=>$f) {
+                // need to check the protein group description of the given peptide in each file to make sure they are all the same
+                foreach ($this->files as $ii=>$fl) {
+                    
+                    if (isset($vals['Protein_Accession'][$fl])) {
+                        $current_prot_acc = $vals['Protein_Accession'][$fl];
+                    }
+                    
+                    if ($common_prot_acc == "") {
+                        $common_prot_acc = $current_prot_acc;
+                    }
+                    elseif ($common_prot_acc != $current_prot_acc) {
+                        $ignore_peptide = "yes";
+                        break;
+                    }
+                    
+                    if (isset($vals['Description'][$fl])) {
+                        $common_desc = $vals['Description'][$fl];
+                    }
+                }
+                
+                if ($ignore_peptide == "no") {
+                
+                  $outobj->getActiveSheet()->setCellValue('A'.$row,$acc);
+                  $outobj->getActiveSheet()->setCellValue('B'.$row,$common_prot_acc);
+                  $outobj->getActiveSheet()->setCellValue('C'.$row,$common_desc);
+                  $outobj->getActiveSheet()->setCellValue('D'.$row,'  ');
+                  $outobj->getActiveSheet()->getCell('B'.$row)->getHyperlink()->setUrl("http://www.uniprot.org/uniprot/$common_prot_acc");
+                    
+                  foreach ($this->files as $i=>$f) {
                     if (isset($vals['Area'][$f])) {
                         
                             $area = $vals['Area'][$f];
                             
                             // Calculate color for Area
                             list($r,$g,$b) = $this->rgb($minarea + 1,$maxarea,$area + 1);
-                            
+                        
                             $col = $r . $g. $b;
                             
                             if ($area > 0) {
                                 // Format area cells
                                 $this->cellColor($cols[$i].$row,$col,$outobj);
                                 $outobj->getActiveSheet()->getStyle($cols[$i].$row)->getNumberFormat()->setFormatCode('0.00E+00');
+                                // Don't write area value unless it's different from null and greater than 0
+                                $outobj->getActiveSheet()->setCellValue($cols[$i].$row,$area);
                             }
-                            $outobj->getActiveSheet()->setCellValue($cols[$i].$row,$area);
+                           // $outobj->getActiveSheet()->setCellValue($cols[$i].$row,$area);
                     } // end if
                     
-                } // end foreach
+                  } // end foreach
+                    
+                  $row++;  // go to next row only of if peptide is not ignored
+                    
+                } // end if ignore_peptide
                 
-                $row++;
+                //$row++;
                 
             } // end foreach
             
@@ -239,7 +294,7 @@
             //$r = 255 - $g;
             
             // specify color scale
-            if ($frac < 0.01) {
+            if ($frac < 0.002) {
               $g = 166;
               $r = 111;
             }
@@ -271,15 +326,20 @@
     
 
     
-        //public function process_accession($accession,$desc,$unique_peptides=null,$area=null) {
         public function process_accession($accession,$desc,$area=null) {
           if (isset($accession) && $accession != "") {
             
             if (!isset($this->accessions[$accession]))  {
                 //$this->accessions[$accession] = array('Description' => $desc, 'Unique_Peptides' => array(),'Area' => array());
-                $this->accessions[$accession] = array('Description' => $desc,'Area' => array());
+                $this->accessions[$accession] = array('Description' => array(),'Area' => array());
             }
-              
+            
+            // keep track of each peptide protein group description by file in which peptide occurs
+            if (isset($desc)) {
+                $this->accessions[$accession]['Description'][$this->current_file] = $desc;
+            }
+
+            // keep track of each peptide area by file in which peptide occurs
             if (isset($area)) {
                 $this->accessions[$accession]['Area'][$this->current_file] = $area;
             }
@@ -293,6 +353,40 @@
               
           } // end if
         
+        } // end function
+
+        
+        public function process_peptide($pep_sequence,$protein_accession,$desc,$area=null) {
+            if (isset($pep_sequence) && $pep_sequence != "") {
+                
+                if (!isset($this->accessions[$pep_sequence]))  {
+                    $this->accessions[$pep_sequence] = array('Protein_Accession' => array(),'Description' => array(),'Area' => array());
+                }
+                
+                // keep track of each peptide protein group accession by file in which peptide occurs
+                if (isset($protein_accession)) {
+                    $this->accessions[$pep_sequence]['Protein_Accession'][$this->current_file] = $protein_accession;
+                }
+
+                // keep track of each peptide protein group description by file in which peptide occurs
+                if (isset($desc)) {
+                    $this->accessions[$pep_sequence]['Description'][$this->current_file] = $desc;
+                }
+                
+                // keep track of each peptide area by file in which peptide occurs
+                if (isset($area)) {
+                    $this->accessions[$pep_sequence]['Area'][$this->current_file] = $area;
+                }
+                
+                if ($area < $this->minarea) {
+                    $this->minarea = $area;
+                }
+                if ($area > $this->maxarea) {
+                    $this->maxarea = $area;
+                }
+                
+            } // end if
+            
         } // end function
 
     
