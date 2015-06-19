@@ -6,5 +6,5 @@ Usage example:
 
 % php UniquePeptideHeatmap.php dark.txt green.txt red.txt
 
-where dark.txt, green.txt and red.txt are three input files.
+where dark.txt, green.txt and red.txt are three input files. See an example of input file format in folder "input_format".
 
